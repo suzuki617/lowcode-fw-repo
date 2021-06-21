@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"application"},{"l":"common"},{"l":"domain"},{"l":"exception"},{"l":"framework"},{"l":"infrastructure"},{"l":"すべてのパッケージ","u":"allpackages-index.html"}];updateSearchResults();
