@@ -1,0 +1,1 @@
+INSERT INTO Employee VALUES ({{id}}, '{{name}}', '{{email}}');
