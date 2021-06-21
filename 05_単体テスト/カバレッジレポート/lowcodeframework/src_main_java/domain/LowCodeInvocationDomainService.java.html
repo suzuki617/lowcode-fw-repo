@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ja"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LowCodeInvocationDomainService.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (2021/06/16 22:47:19)</a> &gt; <a href="../../index.html" class="el_group">lowcodeframework</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">domain</a> &gt; <span class="el_source">LowCodeInvocationDomainService.java</span></div><h1>LowCodeInvocationDomainService.java</h1><pre class="source lang-java linenums">package domain;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import org.apache.log4j.Logger;
+
+import com.sun.jersey.api.view.Viewable;
+
+import common.LowCodeConsts;
+import exception.ErrorViewTransitionException;
+import exception.LowCodeRequestException;
+import infrastructure.LowCodeRepository;
+
+/**
+ * ローコードフレームワークの業務クラス
+ * 
+ * @author t_suzuki
+ * @version 1.0.0
+ */
+public class LowCodeInvocationDomainService {
+<span class="fc" id="L26">	private Logger log = Logger.getLogger(LowCodeInvocationDomainService.class);</span>
+	private LowCodeRepository repo; // リポジトリクラス
+
+	/**
+	 * コンストラクタ
+	 */
+<span class="fc" id="L32">	public LowCodeInvocationDomainService() {</span>
+<span class="fc" id="L33">		this.repo = new LowCodeRepository();</span>
+<span class="fc" id="L34">	}</span>
+
+	/**
+	 * 設定ファイル読込
+	 * 
+	 * @param settingFile 設定ファイル
+	 * @param identifier  識別子
+	 * @return 設定情報
+	 * @throws LowCodeRequestException 入力チェック例外
+	 */
+	public Map&lt;String, String&gt; readSetting(File settingFile, String identifier) throws LowCodeRequestException {
+		try {
+<span class="fc" id="L46">			return this.repo.readSetting(settingFile, identifier);</span>
+<span class="nc" id="L47">		} catch (Exception e) {</span>
+<span class="nc" id="L48">			throw new LowCodeRequestException(e.getMessage());</span>
+		}
+	}
+
+	/**
+	 * 設定ファイル内容チェック
+	 * 
+	 * @param context 設定ファイルの内容
+	 * @throws LowCodeRequestException 入力チェック例外
+	 */
+	public void checkSettingContext(Map&lt;String, String&gt; context) throws LowCodeRequestException {
+		// Viewファイルのチェック
+<span class="fc" id="L60">		this.repo.checkFileExistence(context.get(LowCodeConsts.SETTING_VIEW), &quot;Viewファイルのパスが見つかりません。&quot;);</span>
+		// SQLファイルのチェック
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		if (!context.get(LowCodeConsts.SETTING_SQL).contentEquals(&quot;&quot;)) {</span>
+<span class="fc" id="L63">			this.repo.checkFileExistence(context.get(LowCodeConsts.SETTING_SQL), &quot;SQLファイルのパスが見つかりません。&quot;);</span>
+		}
+		// エラー画面ファイルのチェック
+<span class="fc" id="L66">		this.repo.checkFileExistence(context.get(LowCodeConsts.SETTING_ERROR_VIEW), &quot;エラー画面ファイルのパスが見つかりません。&quot;);</span>
+<span class="fc" id="L67">	}</span>
+
+	/**
+	 * SQL実行
+	 * 
+	 * @param dbPropertiesFilePath DB設定ファイルパス
+	 * @param sqlFilePath          SQLファイルパス
+	 * @param bindVariable         バインド変数
+	 * @param viewTransitionPtn    画面遷移パターン
+	 * @return SQL実行結果
+	 * @throws ErrorViewTransitionException エラー画面遷移例外
+	 */
+	public List&lt;Map&lt;String, String&gt;&gt; executeSql(String dbPropertiesFilePath, String sqlFilePath,
+			Map&lt;String, String&gt; bindVariable, String viewTransitionPtn) throws ErrorViewTransitionException {
+		try {
+			// SQLファイル読込
+<span class="fc" id="L83">			String sqlContext = this.repo.readSqlFile(sqlFilePath);</span>
+
+			// バインド変数の置換
+			String sql;
+<span class="pc bpc" id="L87" title="2 of 4 branches missed.">			if (bindVariable != null &amp;&amp; bindVariable.size() &gt; 0) {</span>
+<span class="fc" id="L88">				sql = this.repo.changeBindVariable(sqlContext, bindVariable);</span>
+<span class="fc" id="L89">			} else {</span>
+<span class="nc" id="L90">				sql = sqlContext;</span>
+			}
+			// DB情報が記載されているプロパティファイル読込み
+<span class="fc" id="L93">			Properties dbProperties = this.repo.readPropertiesFile(dbPropertiesFilePath);</span>
+			// SQLの実行
+<span class="fc" id="L95">			log.info(String.format(&quot;SQLを実行します: %s&quot;, sql));</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">			if (viewTransitionPtn.equals(LowCodeConsts.VIEW_TRANSITION_GET)) {</span>
+				// SELECT文実行
+<span class="fc" id="L98">				return this.repo.executeSelectSql(dbProperties, sql);</span>
+			} else {
+				// UPDATE（INSERT）文実行
+<span class="fc" id="L101">				this.repo.executeUpdateSql(dbProperties, sql);</span>
+<span class="fc" id="L102">				return null;</span>
+			}
+<span class="fc" id="L104">		} catch (SQLException e) {</span>
+<span class="fc" id="L105">			throw new ErrorViewTransitionException(e.getMessage());</span>
+<span class="nc" id="L106">		} catch (IOException e) {</span>
+<span class="nc" id="L107">			throw new ErrorViewTransitionException(e.getMessage());</span>
+		}
+	}
+
+	/**
+	 * 画面情報の作成
+	 * 
+	 * @param viewPath      遷移先画面パス
+	 * @param responseModel レスポンスモデル
+	 * @return Viewable 遷移先Viewable
+	 */
+	public Viewable createViewable(String viewPath, Map&lt;String, List&lt;Map&lt;String, String&gt;&gt;&gt; responseModel) {
+<span class="fc" id="L119">		File file = new File(viewPath);</span>
+<span class="fc" id="L120">		viewPath = &quot;/&quot; + file.getName();</span>
+<span class="fc" id="L121">		log.info(String.format(&quot;遷移先画面:  %s&quot;, viewPath));</span>
+<span class="fc" id="L122">		return this.repo.createViewable(viewPath, responseModel);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>java (2021/06/16 22:47:19)</div></body></html>

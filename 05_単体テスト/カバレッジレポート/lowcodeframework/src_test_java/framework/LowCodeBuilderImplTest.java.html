@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ja"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LowCodeBuilderImplTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (2021/06/16 22:47:19)</a> &gt; <a href="../../index.html" class="el_group">lowcodeframework</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">framework</a> &gt; <span class="el_source">LowCodeBuilderImplTest.java</span></div><h1>LowCodeBuilderImplTest.java</h1><pre class="source lang-java linenums">package framework;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Test;
+
+import com.sun.jersey.api.view.Viewable;
+
+import exception.LowCodeRequestException;
+import exception.LowCodeSystemException;
+
+/**
+ * LowCodeBuilderImplのテストクラス。
+ * 
+ * @author t_suzuki
+ * @version 1.0.0
+ */
+<span class="fc" id="L28">public class LowCodeBuilderImplTest {</span>
+	/**
+	 * 対象： setSetting
+	 * 
+	 * 概要： setSettingの正常ケース。
+	 * 
+	 * 結果： メンバー変数に、引数で指定した値が格納されていること。
+	 */
+//	@Test
+//	public void test正常系01_setSetting() {
+//		LowCodeBuilderImpl testClass = new LowCodeBuilderImpl();
+//		testClass.setSetting(&quot;test.xml&quot;);
+//		Field field;
+//		try {
+//			// フィールド取得
+//			field = LowCodeBuilderImpl.class.getDeclaredField(&quot;setting&quot;);
+//			assertEquals(field.get(testClass), &quot;test.xml&quot;);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
+	/**
+	 * 対象： LowCodeBuilderImpl
+	 * 
+	 * 概要： LowCodeBuilderImplの全体を通じた正常ケース。「DBからデータを取得して画面遷移」を実行。
+	 * 
+	 * 結果： 遷移先画面がtest_get.jspであること。レスポンスモデルがDBから取得した値であること。
+	 */
+	@Test
+	public void test_正常系_DBからデータを取得して画面遷移() {
+		// DB初期化
+<span class="fc" id="L59">		Statement stmt = this.getConnectionStatement();</span>
+<span class="fc" id="L60">		this.dbInit(stmt);</span>
+
+<span class="fc" id="L62">		Map&lt;String, String&gt; queryParams = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L63">		queryParams.put(&quot;key1&quot;, &quot;value1&quot;);</span>
+<span class="fc" id="L64">		LowCodeBuilderImpl testClass = new LowCodeBuilderImpl();</span>
+<span class="fc" id="L65">		LowCodeInvocation invocation = testClass</span>
+<span class="fc" id="L66">				.setSetting(&quot;C:\\Users\\suzuk\\eclipse-workspace\\lowcodeframework\\setting.xml&quot;)</span>
+<span class="fc" id="L67">				.setQueryParams(queryParams).build();</span>
+		try {
+<span class="fc" id="L69">			Viewable view = invocation.invoke(&quot;test_get&quot;);</span>
+			// 遷移先画面がtest_get.jspであること。
+<span class="fc" id="L71">			assertEquals(view.getTemplateName(), &quot;/test_get.jsp&quot;);</span>
+			// レスポンスモデルがDBから取得した値であること。
+			@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L74">			Map&lt;String, List&lt;Map&lt;String, String&gt;&gt;&gt; model = (Map&lt;String, List&lt;Map&lt;String, String&gt;&gt;&gt;) view.getModel();</span>
+<span class="fc" id="L75">			List&lt;Map&lt;String, String&gt;&gt; list = model.get(&quot;model&quot;);</span>
+<span class="fc" id="L76">			assertEquals(list.get(0).get(&quot;id&quot;), &quot;1&quot;);</span>
+<span class="fc" id="L77">			assertEquals(list.get(0).get(&quot;name&quot;), &quot;suzuki&quot;);</span>
+<span class="fc" id="L78">			assertEquals(list.get(0).get(&quot;email&quot;), &quot;suzuki@test.co.jp&quot;);</span>
+<span class="pc" id="L79">		} catch (LowCodeRequestException e) {</span>
+<span class="nc" id="L80">			fail(&quot;LowCodeRequestException&quot;);</span>
+<span class="nc" id="L81">		} catch (LowCodeSystemException e) {</span>
+<span class="nc" id="L82">			fail(&quot;LowCodeSystemException&quot;);</span>
+		}
+<span class="fc" id="L84">	}</span>
+
+	/**
+	 * 対象： LowCodeBuilderImpl
+	 * 
+	 * 概要： LowCodeBuilderImplの全体を通じた正常ケース。「DBにデータ保存をして画面遷移」を実行（INSERT文実行）。
+	 * 
+	 * 結果： 遷移先画面がtest_post.jspであること。INSERT結果が正しいこと。
+	 */
+	@Test
+	public void test_正常系_DBにデータ保存をして画面遷移_INSERT() {
+		// DB初期化
+<span class="fc" id="L96">		Statement stmt = this.getConnectionStatement();</span>
+<span class="fc" id="L97">		this.dbInit(stmt);</span>
+
+<span class="fc" id="L99">		String str = &quot;id=2&amp;name=yamada&amp;email=yamada@test.co.jp&quot;;</span>
+<span class="fc" id="L100">		byte[] sbyte = str.getBytes();</span>
+<span class="fc" id="L101">		LowCodeBuilderImpl testClass = new LowCodeBuilderImpl();</span>
+<span class="fc" id="L102">		LowCodeInvocation invocation = testClass</span>
+<span class="fc" id="L103">				.setSetting(&quot;C:\\Users\\suzuk\\eclipse-workspace\\lowcodeframework\\setting.xml&quot;).setMessageBody(sbyte)</span>
+<span class="fc" id="L104">				.build();</span>
+		try {
+<span class="fc" id="L106">			Viewable view = invocation.invoke(&quot;test_post_insert&quot;);</span>
+			// 遷移先画面がtest_post.jspであること。
+<span class="fc" id="L108">			assertEquals(view.getTemplateName(), &quot;/test_post.jsp&quot;);</span>
+			// INSERT結果が正しいこと。
+<span class="fc" id="L110">			ResultSet rset = stmt.executeQuery(&quot;SELECT * FROM Employee WHERE id = 2;&quot;);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">			while (rset.next()) {</span>
+<span class="fc" id="L112">				assertEquals(rset.getString(&quot;name&quot;), &quot;yamada&quot;);</span>
+<span class="fc" id="L113">				assertEquals(rset.getString(&quot;email&quot;), &quot;yamada@test.co.jp&quot;);</span>
+			}
+<span class="pc" id="L115">		} catch (LowCodeRequestException e) {</span>
+<span class="nc" id="L116">			fail(&quot;LowCodeRequestException&quot;);</span>
+<span class="nc" id="L117">		} catch (LowCodeSystemException e) {</span>
+<span class="nc" id="L118">			fail(&quot;LowCodeSystemException&quot;);</span>
+<span class="nc" id="L119">		} catch (SQLException e) {</span>
+<span class="nc" id="L120">			fail(&quot;SQLException&quot;);</span>
+		}
+<span class="fc" id="L122">	}</span>
+
+	/**
+	 * 対象： LowCodeBuilderImpl
+	 * 
+	 * 概要： LowCodeBuilderImplの全体を通じた正常ケース。「DBにデータ保存をして画面遷移」を実行（UPDATE文実行）。
+	 * 
+	 * 結果： 遷移先画面がtest_post.jspであること。UPDATE結果が正しいこと。
+	 */
+	@Test
+	public void test_正常系_DBにデータ保存をして画面遷移_UPDATE() {
+		// DB初期化
+<span class="fc" id="L134">		Statement stmt = this.getConnectionStatement();</span>
+<span class="fc" id="L135">		this.dbInit(stmt);</span>
+
+<span class="fc" id="L137">		String str = &quot;id=1&amp;name=tanaka&amp;email=tanaka@test.co.jp&quot;;</span>
+<span class="fc" id="L138">		byte[] sbyte = str.getBytes();</span>
+<span class="fc" id="L139">		LowCodeBuilderImpl testClass = new LowCodeBuilderImpl();</span>
+<span class="fc" id="L140">		LowCodeInvocation invocation = testClass</span>
+<span class="fc" id="L141">				.setSetting(&quot;C:\\Users\\suzuk\\eclipse-workspace\\lowcodeframework\\setting.xml&quot;).setMessageBody(sbyte)</span>
+<span class="fc" id="L142">				.build();</span>
+		try {
+<span class="fc" id="L144">			Viewable view = invocation.invoke(&quot;test_post_update&quot;);</span>
+			// 遷移先画面がtest_post.jspであること。
+<span class="fc" id="L146">			assertEquals(view.getTemplateName(), &quot;/test_post.jsp&quot;);</span>
+			// INSERT結果が正しいこと。
+<span class="fc" id="L148">			ResultSet rset = stmt.executeQuery(&quot;SELECT * FROM Employee WHERE id = 1;&quot;);</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">			while (rset.next()) {</span>
+<span class="fc" id="L150">				assertEquals(rset.getString(&quot;name&quot;), &quot;tanaka&quot;);</span>
+<span class="fc" id="L151">				assertEquals(rset.getString(&quot;email&quot;), &quot;tanaka@test.co.jp&quot;);</span>
+			}
+<span class="pc" id="L153">		} catch (LowCodeRequestException e) {</span>
+<span class="nc" id="L154">			fail(&quot;LowCodeRequestException&quot;);</span>
+<span class="nc" id="L155">		} catch (LowCodeSystemException e) {</span>
+<span class="nc" id="L156">			fail(&quot;LowCodeSystemException&quot;);</span>
+<span class="nc" id="L157">		} catch (SQLException e) {</span>
+<span class="nc" id="L158">			fail(&quot;SQLException&quot;);</span>
+		}
+<span class="fc" id="L160">	}</span>
+
+	/**
+	 * 対象： LowCodeBuilderImpl
+	 * 
+	 * 概要： 識別子が見つからなくて、default画面に遷移する純正常ケース。
+	 * 
+	 * 結果： 遷移先画面がindex.jspであること。
+	 */
+	@Test
+	public void test_準正常系_default遷移() {
+		// DB初期化
+<span class="fc" id="L172">		Statement stmt = this.getConnectionStatement();</span>
+<span class="fc" id="L173">		this.dbInit(stmt);</span>
+
+<span class="fc" id="L175">		Map&lt;String, String&gt; queryParams = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L176">		queryParams.put(&quot;key1&quot;, &quot;value1&quot;);</span>
+<span class="fc" id="L177">		LowCodeBuilderImpl testClass = new LowCodeBuilderImpl();</span>
+<span class="fc" id="L178">		LowCodeInvocation invocation = testClass</span>
+<span class="fc" id="L179">				.setSetting(&quot;C:\\Users\\suzuk\\eclipse-workspace\\lowcodeframework\\setting.xml&quot;)</span>
+<span class="fc" id="L180">				.setQueryParams(queryParams).build();</span>
+		try {
+<span class="fc" id="L182">			Viewable view = invocation.invoke(&quot;no_exist&quot;);</span>
+			// 遷移先画面がindex.jspであること。
+<span class="fc" id="L184">			assertEquals(view.getTemplateName(), &quot;/index.jsp&quot;);</span>
+<span class="pc" id="L185">		} catch (LowCodeRequestException e) {</span>
+<span class="nc" id="L186">			fail(&quot;LowCodeRequestException&quot;);</span>
+<span class="nc" id="L187">		} catch (LowCodeSystemException e) {</span>
+<span class="nc" id="L188">			fail(&quot;LowCodeSystemException&quot;);</span>
+		}
+<span class="fc" id="L190">	}</span>
+
+	/**
+	 * 対象： LowCodeBuilderImpl
+	 * 
+	 * 概要： Viewファイルパスが存在しない異常ケース。
+	 * 
+	 * 結果： LowCodeRequestExceptionがthrowされること。
+	 */
+	@Test
+	public void test_異常系_Viewファイルパスが存在しない() {
+		// DB初期化
+<span class="fc" id="L202">		Statement stmt = this.getConnectionStatement();</span>
+<span class="fc" id="L203">		this.dbInit(stmt);</span>
+
+<span class="fc" id="L205">		Map&lt;String, String&gt; queryParams = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L206">		queryParams.put(&quot;key1&quot;, &quot;value1&quot;);</span>
+<span class="fc" id="L207">		LowCodeBuilderImpl testClass = new LowCodeBuilderImpl();</span>
+<span class="fc" id="L208">		LowCodeInvocation invocation = testClass</span>
+<span class="fc" id="L209">				.setSetting(&quot;C:\\Users\\suzuk\\eclipse-workspace\\lowcodeframework\\setting.xml&quot;)</span>
+<span class="fc" id="L210">				.setQueryParams(queryParams).build();</span>
+		try {
+<span class="nc" id="L212">			invocation.invoke(&quot;error_case_view&quot;);</span>
+<span class="nc" id="L213">			fail(&quot;NORMAL END&quot;);</span>
+<span class="pc" id="L214">		} catch (LowCodeRequestException e) {</span>
+<span class="fc" id="L215">			assertEquals(e.getMessage(), &quot;Viewファイルのパスが見つかりません。&quot;);</span>
+<span class="nc" id="L216">		} catch (LowCodeSystemException e) {</span>
+<span class="nc" id="L217">			fail(&quot;LowCodeSystemException&quot;);</span>
+		}
+<span class="fc" id="L219">	}</span>
+
+	/**
+	 * 対象： LowCodeBuilderImpl
+	 * 
+	 * 概要： SQLファイルパスが存在しない異常ケース。
+	 * 
+	 * 結果： LowCodeRequestExceptionがthrowされること。
+	 */
+	@Test
+	public void test_異常系_SQLファイルパスが存在しない() {
+		// DB初期化
+<span class="fc" id="L231">		Statement stmt = this.getConnectionStatement();</span>
+<span class="fc" id="L232">		this.dbInit(stmt);</span>
+
+<span class="fc" id="L234">		Map&lt;String, String&gt; queryParams = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L235">		queryParams.put(&quot;key1&quot;, &quot;value1&quot;);</span>
+<span class="fc" id="L236">		LowCodeBuilderImpl testClass = new LowCodeBuilderImpl();</span>
+<span class="fc" id="L237">		LowCodeInvocation invocation = testClass</span>
+<span class="fc" id="L238">				.setSetting(&quot;C:\\Users\\suzuk\\eclipse-workspace\\lowcodeframework\\setting.xml&quot;)</span>
+<span class="fc" id="L239">				.setQueryParams(queryParams).build();</span>
+		try {
+<span class="nc" id="L241">			invocation.invoke(&quot;error_case_sql&quot;);</span>
+<span class="nc" id="L242">			fail(&quot;NORMAL END&quot;);</span>
+<span class="pc" id="L243">		} catch (LowCodeRequestException e) {</span>
+<span class="fc" id="L244">			assertEquals(e.getMessage(), &quot;SQLファイルのパスが見つかりません。&quot;);</span>
+<span class="nc" id="L245">		} catch (LowCodeSystemException e) {</span>
+<span class="nc" id="L246">			fail(&quot;LowCodeSystemException&quot;);</span>
+		}
+<span class="fc" id="L248">	}</span>
+
+	/**
+	 * 対象： LowCodeBuilderImpl
+	 * 
+	 * 概要： エラー画面ファイルパスが存在しない異常ケース。
+	 * 
+	 * 結果： LowCodeRequestExceptionがthrowされること。
+	 */
+	@Test
+	public void test_異常系_エラー画面ファイルパスが存在しない() {
+		// DB初期化
+<span class="fc" id="L260">		Statement stmt = this.getConnectionStatement();</span>
+<span class="fc" id="L261">		this.dbInit(stmt);</span>
+
+<span class="fc" id="L263">		Map&lt;String, String&gt; queryParams = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L264">		queryParams.put(&quot;key1&quot;, &quot;value1&quot;);</span>
+<span class="fc" id="L265">		LowCodeBuilderImpl testClass = new LowCodeBuilderImpl();</span>
+<span class="fc" id="L266">		LowCodeInvocation invocation = testClass</span>
+<span class="fc" id="L267">				.setSetting(&quot;C:\\Users\\suzuk\\eclipse-workspace\\lowcodeframework\\setting.xml&quot;)</span>
+<span class="fc" id="L268">				.setQueryParams(queryParams).build();</span>
+		try {
+<span class="nc" id="L270">			invocation.invoke(&quot;error_case_error_view&quot;);</span>
+<span class="nc" id="L271">			fail(&quot;NORMAL END&quot;);</span>
+<span class="pc" id="L272">		} catch (LowCodeRequestException e) {</span>
+<span class="fc" id="L273">			assertEquals(e.getMessage(), &quot;エラー画面ファイルのパスが見つかりません。&quot;);</span>
+<span class="nc" id="L274">		} catch (LowCodeSystemException e) {</span>
+<span class="nc" id="L275">			fail(&quot;LowCodeSystemException&quot;);</span>
+		}
+<span class="fc" id="L277">	}</span>
+
+	/**
+	 * 対象： LowCodeBuilderImpl
+	 * 
+	 * 概要： SQLの実行に失敗する異常ケース。
+	 * 
+	 * 結果： エラー画面に遷移すること。
+	 */
+	@Test
+	public void test_異常系_SQL実行失敗() {
+		// DB初期化
+<span class="fc" id="L289">		Statement stmt = this.getConnectionStatement();</span>
+<span class="fc" id="L290">		this.dbInit(stmt);</span>
+
+<span class="fc" id="L292">		Map&lt;String, String&gt; queryParams = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L293">		queryParams.put(&quot;key1&quot;, &quot;value1&quot;);</span>
+<span class="fc" id="L294">		LowCodeBuilderImpl testClass = new LowCodeBuilderImpl();</span>
+<span class="fc" id="L295">		LowCodeInvocation invocation = testClass</span>
+<span class="fc" id="L296">				.setSetting(&quot;C:\\Users\\suzuk\\eclipse-workspace\\lowcodeframework\\setting.xml&quot;)</span>
+<span class="fc" id="L297">				.setQueryParams(queryParams).build();</span>
+		try {
+<span class="fc" id="L299">			Viewable view = invocation.invoke(&quot;error_execute_sql&quot;);</span>
+			// 遷移先画面がsystem_error.jspであること。
+<span class="fc" id="L301">			assertEquals(view.getTemplateName(), &quot;/system_error.jsp&quot;);</span>
+<span class="pc" id="L302">		} catch (LowCodeRequestException e) {</span>
+<span class="nc" id="L303">			fail(&quot;LowCodeRequestException&quot;);</span>
+<span class="nc" id="L304">		} catch (LowCodeSystemException e) {</span>
+<span class="nc" id="L305">			fail(&quot;LowCodeSystemException&quot;);</span>
+		}
+<span class="fc" id="L307">	}</span>
+
+	private void dbInit(Statement stmt) {
+		try {
+<span class="fc" id="L311">			stmt.execute(&quot;TRUNCATE TABLE Employee;&quot;);</span>
+<span class="fc" id="L312">			stmt.execute(&quot;INSERT INTO employee VALUES (1, 'suzuki', 'suzuki@test.co.jp');&quot;);</span>
+<span class="pc" id="L313">		} catch (SQLException e) {</span>
+			// 何もしない
+		}
+<span class="fc" id="L316">	}</span>
+
+	private Statement getConnectionStatement() {
+<span class="fc" id="L319">		Connection conn = null;</span>
+
+<span class="fc" id="L321">		String url = &quot;jdbc:postgresql://localhost:5432/postgres&quot;;</span>
+<span class="fc" id="L322">		String user = &quot;postgres&quot;;</span>
+<span class="fc" id="L323">		String password = &quot;pass&quot;;</span>
+		try {
+			// PostgreSQLへ接続
+<span class="fc" id="L326">			conn = DriverManager.getConnection(url, user, password);</span>
+<span class="fc" id="L327">			Statement stmt = conn.createStatement();</span>
+<span class="fc" id="L328">			return stmt;</span>
+<span class="nc" id="L329">		} catch (Exception e) {</span>
+			// 何もしない
+<span class="nc" id="L331">			return null;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>java (2021/06/16 22:47:19)</div></body></html>

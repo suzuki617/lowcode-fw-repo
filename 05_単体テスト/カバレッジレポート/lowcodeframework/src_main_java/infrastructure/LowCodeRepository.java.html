@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ja"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LowCodeRepository.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (2021/06/16 22:47:19)</a> &gt; <a href="../../index.html" class="el_group">lowcodeframework</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">infrastructure</a> &gt; <span class="el_source">LowCodeRepository.java</span></div><h1>LowCodeRepository.java</h1><pre class="source lang-java linenums">package infrastructure;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import com.sun.jersey.api.view.Viewable;
+
+import common.LowCodeConsts;
+import exception.LowCodeRequestException;
+
+/**
+ * ローコード画面遷移フレームワークのリポジトリクラス。
+ * 
+ * @author t_suzuki
+ * @version 1.0.0
+ */
+<span class="fc" id="L42">public class LowCodeRepository {</span>
+	/**
+	 * 設定ファイル読込
+	 * 
+	 * @param settingFile 設定ファイル
+	 * @param identifier  識別子
+	 * @return 読み込んだ設定情報
+	 * @throws ParserConfigurationException ParserConfigurationException
+	 * @throws IOException                  IOException
+	 * @throws SAXException                 SAXException
+	 */
+	public Map&lt;String, String&gt; readSetting(File settingFile, String identifier)
+			throws ParserConfigurationException, SAXException, IOException {
+<span class="fc" id="L55">		Map&lt;String, String&gt; context = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L56">		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();</span>
+<span class="fc" id="L57">		DocumentBuilder builder = factory.newDocumentBuilder();</span>
+<span class="fc" id="L58">		Document doc = builder.parse(settingFile);</span>
+<span class="fc" id="L59">		Element root = doc.getDocumentElement();</span>
+<span class="fc" id="L60">		NodeList children = root.getChildNodes();</span>
+<span class="fc" id="L61">		Boolean targetFlag = false;</span>
+
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		for (int i = 0; i &lt; children.getLength(); i++) {</span>
+
+<span class="fc" id="L65">			Node child = children.item(i);</span>
+
+<span class="fc bfc" id="L67" title="All 2 branches covered.">			if (child instanceof Element) {</span>
+<span class="fc" id="L68">				Element childElement = (Element) child;</span>
+<span class="fc" id="L69">				NodeList grandChildren = childElement.getChildNodes();</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">				for (int j = 0; j &lt; grandChildren.getLength(); j++) {</span>
+<span class="fc" id="L71">					Node grandChild = grandChildren.item(j);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">					if (grandChild instanceof Element) {</span>
+<span class="fc" id="L73">						Element grandChildElement = (Element) grandChild;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">						if (grandChildElement.getTagName().equals(LowCodeConsts.SETTING_IDENTIFIER)) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">							if (grandChildElement.getTextContent().equals(identifier)) {</span>
+<span class="fc" id="L76">								context.put(grandChildElement.getTagName(), grandChildElement.getTextContent());</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">								targetFlag = !targetFlag;</span>
+							}
+<span class="fc" id="L79">						} else {</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">							if (targetFlag) {</span>
+<span class="fc" id="L81">								context.put(grandChildElement.getTagName(), grandChildElement.getTextContent());</span>
+							}
+						}
+					}
+				}
+			}
+
+<span class="fc bfc" id="L88" title="All 2 branches covered.">			if (targetFlag) {</span>
+<span class="fc" id="L89">				return context;</span>
+			}
+		}
+
+		// 識別子が見つからない場合
+<span class="fc" id="L94">		return null;</span>
+	}
+
+	/**
+	 * 設定ファイル内のファイルパス存在チェック
+	 * 
+	 * @param filePath     ファイルパス
+	 * @param errorMessage エラーメッセージ
+	 * @throws LowCodeRequestException 入力チェック例外
+	 */
+	public void checkFileExistence(String filePath, String errorMessage) throws LowCodeRequestException {
+		try {
+<span class="fc" id="L106">			File file = new File(filePath);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">			if (!file.exists()) {</span>
+<span class="fc" id="L108">				throw new Exception();</span>
+			}
+<span class="fc" id="L110">		} catch (Exception e) {</span>
+<span class="fc" id="L111">			throw new LowCodeRequestException(errorMessage);</span>
+		}
+<span class="fc" id="L113">	}</span>
+
+	/**
+	 * SQLファイルの読込み
+	 * 
+	 * @param sqlFilePath SQLファイルパス
+	 * @return SQLファイルの内容
+	 * @throws IOException IO例外
+	 */
+	public String readSqlFile(String sqlFilePath) throws IOException {
+<span class="fc" id="L123">		File file = new File(sqlFilePath);</span>
+
+<span class="fc" id="L125">		BufferedReader br = new BufferedReader(new FileReader(file));</span>
+
+<span class="fc" id="L127">		String lines = &quot;&quot;;</span>
+		String line;
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		while ((line = br.readLine()) != null) {</span>
+<span class="fc" id="L130">			lines += line;</span>
+		}
+<span class="fc" id="L132">		br.close();</span>
+<span class="fc" id="L133">		return lines;</span>
+	}
+
+	/**
+	 * プロパティファイル読込み
+	 * 
+	 * @param filePath ファイルパス
+	 * @return プロパティクラス
+	 * @throws IOException           IO例外
+	 * @throws FileNotFoundException ファイル存在しない例外
+	 */
+	public Properties readPropertiesFile(String filePath) throws FileNotFoundException, IOException {
+<span class="fc" id="L145">		Properties conf = new Properties();</span>
+<span class="fc" id="L146">		conf.load(new FileInputStream(filePath));</span>
+<span class="fc" id="L147">		return conf;</span>
+	}
+
+	/**
+	 * バインド変数の変換
+	 * 
+	 * @param sqlContext   SQL
+	 * @param bindVariable バインド変数
+	 * @return 変換したSQLの内容
+	 */
+	public String changeBindVariable(String sqlContext, Map&lt;String, String&gt; bindVariable) {
+<span class="fc" id="L158">		String sql = new String(sqlContext);</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; entry : bindVariable.entrySet()) {</span>
+<span class="fc" id="L160">			String target = &quot;{{&quot; + entry.getKey() + &quot;}}&quot;;</span>
+<span class="fc" id="L161">			sql = sql.replace(target, entry.getValue());</span>
+		}
+<span class="fc" id="L163">		return sql;</span>
+	}
+
+	/**
+	 * SELECT文実行
+	 * 
+	 * @param dbProperties DBプロパティファイル
+	 * @param sql          SQL
+	 * @return SQL実行結果（※Listオブジェクトに、実行結果のMapが含まれている）
+	 * @throws SQLException SQLException
+	 */
+	public List&lt;Map&lt;String, String&gt;&gt; executeSelectSql(Properties dbProperties, String sql) throws SQLException {
+<span class="fc" id="L175">		Connection conn = null;</span>
+<span class="fc" id="L176">		Statement stmt = null;</span>
+<span class="fc" id="L177">		ResultSet rset = null;</span>
+
+		try {
+			// PostgreSQLへ接続
+<span class="fc" id="L181">			conn = this.getConnection(dbProperties);</span>
+
+			// SQL実行
+<span class="fc" id="L184">			stmt = conn.createStatement();</span>
+<span class="fc" id="L185">			rset = stmt.executeQuery(sql);</span>
+
+<span class="fc" id="L187">			ResultSetMetaData rsmd = rset.getMetaData();</span>
+
+<span class="fc" id="L189">			List&lt;Map&lt;String, String&gt;&gt; list = new ArrayList&lt;Map&lt;String, String&gt;&gt;();</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">			while (rset.next()) {</span>
+<span class="fc" id="L191">				Map&lt;String, String&gt; result = new HashMap&lt;String, String&gt;();</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">				for (int i = 1; i &lt;= rsmd.getColumnCount(); i++) {</span>
+<span class="fc" id="L193">					result.put(rsmd.getColumnName(i), rset.getString(rsmd.getColumnName(i)));</span>
+				}
+<span class="fc" id="L195">				list.add(result);</span>
+			}
+<span class="fc" id="L197">			conn.commit();</span>
+<span class="fc" id="L198">			return list;</span>
+<span class="fc" id="L199">		} catch (SQLException e) {</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">			if (conn != null) {</span>
+<span class="fc" id="L201">				conn.rollback();</span>
+			}
+<span class="fc" id="L203">			throw e;</span>
+		} finally {
+			try {
+<span class="fc bfc" id="L206" title="All 2 branches covered.">				if (rset != null)</span>
+<span class="fc" id="L207">					rset.close();</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">				if (stmt != null)</span>
+<span class="fc" id="L209">					stmt.close();</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">				if (conn != null)</span>
+<span class="fc" id="L211">					conn.close();</span>
+<span class="pc" id="L212">			} catch (SQLException e) {</span>
+<span class="nc" id="L213">				e.printStackTrace();</span>
+			}
+
+		}
+	}
+
+	/**
+	 * UPDATE文（INSERT文）実行
+	 * 
+	 * @param dbProperties DBプロパティファイル
+	 * @param sql          SQL
+	 * @return SQL実行件数
+	 * @throws SQLException SQLException
+	 */
+	public int executeUpdateSql(Properties dbProperties, String sql) throws SQLException {
+<span class="fc" id="L228">		Connection conn = null;</span>
+<span class="fc" id="L229">		Statement stmt = null;</span>
+<span class="fc" id="L230">		ResultSet rset = null;</span>
+
+		try {
+			// PostgreSQLへ接続
+<span class="fc" id="L234">			conn = this.getConnection(dbProperties);</span>
+
+			// SQL実行
+<span class="fc" id="L237">			stmt = conn.createStatement();</span>
+<span class="fc" id="L238">			int rowcount = stmt.executeUpdate(sql);</span>
+<span class="fc" id="L239">			conn.commit();</span>
+<span class="fc" id="L240">			return rowcount;</span>
+<span class="nc" id="L241">		} catch (SQLException e) {</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">			if (conn != null) {</span>
+<span class="nc" id="L243">				conn.rollback();</span>
+			}
+<span class="nc" id="L245">			throw e;</span>
+		} finally {
+			try {
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">				if (rset != null)</span>
+<span class="nc" id="L249">					rset.close();</span>
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">				if (stmt != null)</span>
+<span class="fc" id="L251">					stmt.close();</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">				if (conn != null)</span>
+<span class="fc" id="L253">					conn.close();</span>
+<span class="pc" id="L254">			} catch (SQLException e) {</span>
+<span class="nc" id="L255">				e.printStackTrace();</span>
+			}
+
+		}
+	}
+
+	/**
+	 * DBコネクション取得
+	 * 
+	 * @param dbProperties DBプロパティファイル
+	 * @return DBコネクション
+	 * @throws SQLException
+	 */
+	private Connection getConnection(Properties dbProperties) throws SQLException {
+<span class="fc" id="L269">		String url = dbProperties.getProperty(&quot;url&quot;);</span>
+<span class="fc" id="L270">		String user = dbProperties.getProperty(&quot;user&quot;);</span>
+<span class="fc" id="L271">		String password = dbProperties.getProperty(&quot;password&quot;);</span>
+		// PostgreSQLへ接続
+<span class="fc" id="L273">		Connection conn = DriverManager.getConnection(url, user, password);</span>
+		// 自動コミットOFF
+<span class="fc" id="L275">		conn.setAutoCommit(false);</span>
+<span class="fc" id="L276">		return conn;</span>
+	}
+
+	/**
+	 * 画面情報の作成
+	 * 
+	 * @param viewPath      遷移先画面パス
+	 * @param responseModel レスポンスモデル
+	 * @return Viewableクラス
+	 */
+	public Viewable createViewable(String viewPath, Map&lt;String, List&lt;Map&lt;String, String&gt;&gt;&gt; responseModel) {
+<span class="fc" id="L287">		return new Viewable(viewPath, responseModel);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>java (2021/06/16 22:47:19)</div></body></html>

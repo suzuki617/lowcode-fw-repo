@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ja"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>LowCodeInvocationImpl.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">java (2021/06/16 22:47:19)</a> &gt; <a href="../../index.html" class="el_group">lowcodeframework</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">application</a> &gt; <span class="el_source">LowCodeInvocationImpl.java</span></div><h1>LowCodeInvocationImpl.java</h1><pre class="source lang-java linenums">package application;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.apache.log4j.xml.DOMConfigurator;
+
+import com.sun.jersey.api.view.Viewable;
+
+import common.LowCodeConsts;
+import domain.LowCodeInvocationDomainService;
+import exception.ErrorViewTransitionException;
+import exception.LowCodeRequestException;
+import exception.LowCodeSystemException;
+import framework.LowCodeInvocation;
+
+/**
+ * ローコード画面遷移フレームワークの実行クラス。
+ * 
+ * @author t_suzuki
+ * @version 1.0.0
+ */
+public class LowCodeInvocationImpl implements LowCodeInvocation {
+	private File settingFile; // 設定ファイル
+	private Map&lt;String, String&gt; bindVariable; // バインド変数
+	private String viewTransitionPtn; // 画面遷移パターン
+<span class="fc" id="L30">	private Logger log = Logger.getLogger(LowCodeInvocationImpl.class); // ログ</span>
+	private String frameworkPath; // フレームワークのパス
+	private LowCodeInvocationDomainService service; // ドメインサービスクラス
+
+	/**
+	 * コンストラクタ
+	 * 
+	 * @param setting           設定ファイルパス
+	 * @param bindVariable      バインド変数
+	 * @param viewTransitionPtn 画面遷移パターン
+	 */
+<span class="fc" id="L41">	public LowCodeInvocationImpl(String setting, Map&lt;String, String&gt; bindVariable, String viewTransitionPtn) {</span>
+<span class="fc" id="L42">		this.settingFile = new File(setting);</span>
+<span class="fc" id="L43">		this.bindVariable = bindVariable;</span>
+<span class="fc" id="L44">		this.viewTransitionPtn = viewTransitionPtn;</span>
+<span class="fc" id="L45">		this.frameworkPath = this.settingFile.getParent();</span>
+		// ログファイルの設定
+<span class="fc" id="L47">		DOMConfigurator.configure(this.frameworkPath + &quot;\\&quot; + LowCodeConsts.LOG4J_XML_FILE);</span>
+		// ドメインサービスクラスの生成
+<span class="fc" id="L49">		this.service = new LowCodeInvocationDomainService();</span>
+<span class="fc" id="L50">	}</span>
+
+	/**
+	 * 画面遷移の実行
+	 * 
+	 * @param identifer 識別子
+	 * @return 遷移画面Viewable
+	 * @throws LowCodeRequestException 入力チェック例外クラス
+	 * @throws LowCodeSystemException  想定外例外クラス
+	 */
+	public Viewable invoke(String identifer) throws LowCodeRequestException, LowCodeSystemException {
+<span class="fc" id="L61">		Map&lt;String, String&gt; settingContext = null;</span>
+		try {
+			// 開始ログの出力
+<span class="fc" id="L64">			log.info(String.format(&quot;「%s」を開始します。&quot;, viewTransitionPtn));</span>
+
+			// 設定ファイルの読込み
+<span class="fc" id="L67">			settingContext = this.service.readSetting(this.settingFile, identifer);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">			if (settingContext == null) {</span>
+				// デフォルトページに遷移
+<span class="fc" id="L70">				settingContext = this.service.readSetting(this.settingFile, LowCodeConsts.DEFAULT_IDENTIFIER);</span>
+			}
+
+			// 設定ファイルの入力チェック
+<span class="fc" id="L74">			this.service.checkSettingContext(settingContext);</span>
+
+			// SQLの実行
+<span class="fc" id="L77">			Map&lt;String, List&lt;Map&lt;String, String&gt;&gt;&gt; responseModel = new HashMap&lt;String, List&lt;Map&lt;String, String&gt;&gt;&gt;();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">			if (!settingContext.get(LowCodeConsts.SETTING_SQL).contentEquals(&quot;&quot;)) {</span>
+<span class="fc" id="L79">				List&lt;Map&lt;String, String&gt;&gt; list = this.service.executeSql(</span>
+<span class="fc" id="L80">						this.frameworkPath + &quot;\\&quot; + LowCodeConsts.DB_PROPERTIES_FILE,</span>
+<span class="fc" id="L81">						settingContext.get(LowCodeConsts.SETTING_SQL), bindVariable, this.viewTransitionPtn);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">				if (list != null) {</span>
+					// レスポンスモデルの作成
+<span class="fc" id="L84">					responseModel.put(&quot;model&quot;, list);</span>
+				}
+			}
+
+			// 画面情報の作成
+<span class="fc" id="L89">			Viewable view = this.service.createViewable(settingContext.get(LowCodeConsts.SETTING_VIEW), responseModel);</span>
+
+			// 終了ログの出力
+<span class="fc" id="L92">			log.info(String.format(&quot;「%s」を終了します。&quot;, viewTransitionPtn));</span>
+
+<span class="fc" id="L94">			return view;</span>
+
+<span class="fc" id="L96">		} catch (LowCodeRequestException e) {</span>
+<span class="fc" id="L97">			log.error(e.getMessage());</span>
+<span class="fc" id="L98">			throw e;</span>
+
+<span class="fc" id="L100">		} catch (ErrorViewTransitionException e) {</span>
+<span class="fc" id="L101">			log.error(e.getMessage());</span>
+			// エラー画面遷移
+<span class="fc" id="L103">			return this.service.createViewable(settingContext.get(LowCodeConsts.SETTING_ERROR_VIEW), null);</span>
+
+<span class="nc" id="L105">		} catch (Exception e) {</span>
+<span class="nc" id="L106">			log.error(String.format(&quot;想定外のエラーが発生しました。%s&quot;, e.getMessage()));</span>
+<span class="nc" id="L107">			throw new LowCodeSystemException(e.getMessage());</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>java (2021/06/16 22:47:19)</div></body></html>
